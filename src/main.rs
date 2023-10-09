@@ -30,19 +30,18 @@ enum GridState {
     E(GridNotEndState),
 }
 
-macro_rules! grid_state {
-    ($state:expr, $a:ident, $b:ident, $c:ident) => {
-        if $state.$a != CellState::E && $state.$a == $state.$b && $state.$a == $state.$c {
-            return if $state.$a == CellState::O {
-                GridState::O
-            } else {
-                GridState::X
-            };
-        }
-    };
-}
-
 fn grid_state(state: GridNotEndState) -> GridState {
+    macro_rules! grid_state {
+        ($state:expr, $a:ident, $b:ident, $c:ident) => {
+            if $state.$a == CellState::O && $state.$a == $state.$b && $state.$a == $state.$c {
+                return GridState::O;
+            }
+            if $state.$a == CellState::X && $state.$a == $state.$b && $state.$a == $state.$c {
+                return GridState::X;
+            }
+        };
+    }
+
     grid_state!(state, a, b, c);
     grid_state!(state, d, e, f);
     grid_state!(state, g, h, i);
@@ -88,6 +87,15 @@ fn mark_all_as_dead(state: GridNotEndState) -> GridNotEndState {
 }
 
 fn calculate_dead_cell(state: GridNotEndState) -> GridState {
+    match grid_state(state) {
+        GridState::O => {
+            return GridState::O;
+        }
+        GridState::X => {
+            return GridState::X;
+        }
+        _ => (),
+    }
     let mut tmp = state;
     if state.a == CellState::E {
         tmp.a = CellState::O;
@@ -195,19 +203,15 @@ fn main() {
                                             h,
                                             i,
                                         };
+                                        if !is_possible_state(state) {
+                                            continue;
+                                        }
                                         let state = calculate_dead_cell(state);
                                         if set.contains(&state) {
                                             continue;
                                         }
                                         set.insert(state);
-                                        match state {
-                                            GridState::E(state) => {
-                                                if is_possible_state(state) {
-                                                    println!("{:?}", state);
-                                                }
-                                            }
-                                            _ => continue,
-                                        }
+                                        println!("{:?}", state);
                                     }
                                 }
                             }
