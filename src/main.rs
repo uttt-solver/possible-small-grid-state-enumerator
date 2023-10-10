@@ -71,94 +71,25 @@ fn is_possible_state(state: GridNotEndState) -> bool {
     is_possible_state!(state, a, b, c, d, e, f, g, h, i)
 }
 
-fn mark_all_as_dead(state: GridNotEndState) -> GridNotEndState {
-    macro_rules! mark_all_as_dead {
-        ($state:expr, $($field:ident),*) => {{
-            let mut result = $state;
-            $(
-                if $state.$field != CellState::E {
-                    result.$field = CellState::D;
-                }
-            )*
-            result
-        }};
-    }
-    mark_all_as_dead!(state, a, b, c, d, e, f, g, h, i)
+fn is_dead_row(a: CellState, b: CellState, c: CellState) -> bool {
+    let has_o = a == CellState::O
+        || a == CellState::D
+        || b == CellState::O
+        || b == CellState::D
+        || c == CellState::O
+        || c == CellState::D;
+    let has_x = a == CellState::X
+        || a == CellState::D
+        || b == CellState::X
+        || b == CellState::D
+        || c == CellState::X
+        || c == CellState::D;
+    has_o && has_x
 }
 
 fn calculate_dead_cell(state: GridNotEndState) -> GridState {
-    match grid_state(state) {
-        GridState::O => {
-            return GridState::O;
-        }
-        GridState::X => {
-            return GridState::X;
-        }
-        _ => (),
-    }
-    let mut tmp = state;
-    if state.a == CellState::E {
-        tmp.a = CellState::O;
-    }
-    if state.b == CellState::E {
-        tmp.b = CellState::O;
-    }
-    if state.c == CellState::E {
-        tmp.c = CellState::O;
-    }
-    if state.d == CellState::E {
-        tmp.d = CellState::O;
-    }
-    if state.e == CellState::E {
-        tmp.e = CellState::O;
-    }
-    if state.f == CellState::E {
-        tmp.f = CellState::O;
-    }
-    if state.g == CellState::E {
-        tmp.g = CellState::O;
-    }
-    if state.h == CellState::E {
-        tmp.h = CellState::O;
-    }
-    if state.i == CellState::E {
-        tmp.i = CellState::O;
-    }
-    let tmp_o = !matches!(grid_state(tmp), GridState::O);
-    if state.a == CellState::E {
-        tmp.a = CellState::X;
-    }
-    if state.b == CellState::E {
-        tmp.b = CellState::X;
-    }
-    if state.c == CellState::E {
-        tmp.c = CellState::X;
-    }
-    if state.d == CellState::E {
-        tmp.d = CellState::X;
-    }
-    if state.e == CellState::E {
-        tmp.e = CellState::X;
-    }
-    if state.f == CellState::E {
-        tmp.f = CellState::X;
-    }
-    if state.g == CellState::E {
-        tmp.g = CellState::X;
-    }
-    if state.h == CellState::E {
-        tmp.h = CellState::X;
-    }
-    if state.i == CellState::E {
-        tmp.i = CellState::X;
-    }
-    let tmp_x = !matches!(grid_state(tmp), GridState::X);
-    if tmp_o && tmp_x {
-        return grid_state(mark_all_as_dead(state));
-    }
-
     let mut result = state;
-    macro_rules! check_dead {
+    macro_rules! check_dead1 {
         ($state:expr, $cell:ident, $($cells:ident),*) => {
             let mut all_dead = true;
             $(
@@ -169,15 +100,63 @@ fn calculate_dead_cell(state: GridNotEndState) -> GridState {
             }
         };
     }
-    check_dead!(result, a, a, b, c, d, e, g, i);
-    check_dead!(result, b, a, b, c, e, h);
-    check_dead!(result, c, a, b, c, e, f, g, i);
-    check_dead!(result, d, a, d, e, f, g);
-    check_dead!(result, e, a, b, c, d, e, f, g, h, i);
-    check_dead!(result, f, c, d, e, f, i);
-    check_dead!(result, g, a, c, d, e, g, h, i);
-    check_dead!(result, h, b, e, g, h, i);
-    check_dead!(result, i, a, c, e, f, g, h, i);
+    macro_rules! check_dead2 {
+        ($state:expr, $cell:ident, $a:ident, $b:ident) => {{
+            $state.$cell != CellState::E && is_dead_row($state.$cell, $state.$a, $state.$b)
+        }};
+    }
+    check_dead1!(result, a, a, b, c, d, e, g, i);
+    if check_dead2!(result, a, b, c)
+        && check_dead2!(result, a, d, g)
+        && check_dead2!(result, a, e, i)
+    {
+        result.a = CellState::D;
+    }
+    check_dead1!(result, b, a, b, c, e, h);
+    if check_dead2!(result, b, a, c) && check_dead2!(result, b, e, h) {
+        result.b = CellState::D;
+    }
+    check_dead1!(result, c, a, b, c, e, f, g, i);
+    if check_dead2!(result, c, a, b)
+        && check_dead2!(result, c, f, i)
+        && check_dead2!(result, c, e, g)
+    {
+        result.c = CellState::D;
+    }
+    check_dead1!(result, d, a, d, e, f, g);
+    if check_dead2!(result, d, e, f) && check_dead2!(result, d, a, g) {
+        result.d = CellState::D;
+    }
+    check_dead1!(result, e, a, b, c, d, e, f, g, h, i);
+    if check_dead2!(result, e, d, f)
+        && check_dead2!(result, e, b, h)
+        && check_dead2!(result, e, a, i)
+        && check_dead2!(result, e, c, g)
+    {
+        result.e = CellState::D;
+    }
+    check_dead1!(result, f, c, d, e, f, i);
+    if check_dead2!(result, f, d, e) && check_dead2!(result, f, c, i) {
+        result.f = CellState::D;
+    }
+    check_dead1!(result, g, a, c, d, e, g, h, i);
+    if check_dead2!(result, g, h, i)
+        && check_dead2!(result, g, a, d)
+        && check_dead2!(result, g, c, e)
+    {
+        result.g = CellState::D;
+    }
+    check_dead1!(result, h, b, e, g, h, i);
+    if check_dead2!(result, h, g, i) && check_dead2!(result, h, b, e) {
+        result.h = CellState::D;
+    }
+    check_dead1!(result, i, a, c, e, f, g, h, i);
+    if check_dead2!(result, i, g, h)
+        && check_dead2!(result, i, c, f)
+        && check_dead2!(result, i, a, e)
+    {
+        result.i = CellState::D;
+    }
     grid_state(result)
 }
 
