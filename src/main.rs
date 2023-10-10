@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 enum CellState {
     E, // empty
     O, // O
@@ -10,7 +10,7 @@ enum CellState {
 
 const CELL_STATE: [CellState; 3] = [CellState::E, CellState::O, CellState::X];
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 struct GridNotEndState {
     a: CellState,
     b: CellState,
@@ -23,7 +23,7 @@ struct GridNotEndState {
     i: CellState,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 enum GridState {
     O,
     X,
@@ -160,8 +160,18 @@ fn calculate_dead_cell(state: GridNotEndState) -> GridState {
     grid_state(result)
 }
 
+impl Display for GridNotEndState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?}{:?}{:?}{:?}{:?}{:?}{:?}{:?}{:?}",
+            self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.h, self.i
+        )?;
+        Ok(())
+    }
+}
+
 fn main() {
-    let mut set = HashSet::new();
     for a in CELL_STATE {
         for b in CELL_STATE {
             for c in CELL_STATE {
@@ -185,12 +195,13 @@ fn main() {
                                         if !is_possible_state(state) {
                                             continue;
                                         }
-                                        let state = calculate_dead_cell(state);
-                                        if set.contains(&state) {
-                                            continue;
+                                        let grid_state = calculate_dead_cell(state);
+                                        match grid_state {
+                                            GridState::E(calculated_state) => {
+                                                println!("{}={}", state, calculated_state);
+                                            }
+                                            _ => (),
                                         }
-                                        set.insert(state);
-                                        println!("{:?}", state);
                                     }
                                 }
                             }
